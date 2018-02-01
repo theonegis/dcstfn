@@ -1,0 +1,21 @@
+{
+  "save_dir": "dcfn-green",
+  "model": {
+    "name": "dcfn",
+    "params": {"d": [64, 96, 128]}
+  },
+  "scale": 16,
+  "train_set": "green_train",
+  "val_set": "green_valid",
+  "test_sets": ["green_valid", "green_test"],
+  "lr_sub_size": 10,
+  "lr_sub_stride": 5,
+  "epochs": 5,
+  "optimizer": {
+    "name": "adam",
+    "params": {
+      "lr": 1e-3,
+      "decay": 1e-5
+    }
+  }
+}
