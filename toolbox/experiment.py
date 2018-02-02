@@ -108,7 +108,7 @@ class Experiment(object):
         callbacks += [CSVLogger(str(self.history_file), append=resume)]
 
         # Train
-        model.fit(x_train, y_train, batch_size=256, epochs=epochs, callbacks=callbacks,
+        model.fit(x_train, y_train, batch_size=128, epochs=epochs, callbacks=callbacks,
                   validation_data=(x_val, y_val), initial_epoch=initial_epoch)
 
         # Plot metrics history
@@ -149,6 +149,7 @@ class Experiment(object):
 
     def test_on_image(self, image_dir, output_dir, lr_block_size=(20, 20), metrics=[psnr]):
         # Load images
+        print('loading image pairs from {}'.format(image_dir))
         input_images, valid_image = load_image_pairs(image_dir, scale=self.scale)
         assert len(input_images) == 3
         name = input_images[-1].filename.name if hasattr(input_images[-1], 'filename') else ''
@@ -175,8 +176,8 @@ class Experiment(object):
         rows = x_inputs[0].shape[2] // lr_block_size[1]
         cols = x_inputs[0].shape[1] // lr_block_size[0]
         count = 0
-        for i in range(cols):
-            for j in range(rows):
+        for j in range(rows):
+            for i in range(cols):
                 y_pred[i * row_step: (i + 1) * row_step, j * col_step: (j + 1) * col_step] = y_preds[count]
                 count += 1
         assert count == rows * cols

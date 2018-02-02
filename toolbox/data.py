@@ -34,7 +34,7 @@ def gen_patches(image, size, stride=None):
 def load_image_pairs(directory, scale=16):
     """从指定目录中加载高低分辨率的图像对（包括两幅MODIS影像和两幅Landsat影像）"""
     path_list = []
-    for path in Path(directory).glob('*'):
+    for path in Path(directory).glob('*.tif'):
         path_list.append(path)
     assert len(path_list) == 4
 
@@ -88,6 +88,7 @@ def load_train_set(image_dir, lr_sub_size=10, lr_sub_stride=5, scale=16):
     patches = [[] for _ in range(4)]
     for path in (data_dir / image_dir).glob('*'):
         if path.is_dir():
+            print('loading image pairs from {}'.format(path))
             samples = load_image_pairs(path, scale=scale)
             samples = [*samples[0], samples[1]]
             sample_to_array(samples, lr_gen_sub, hr_gen_sub, patches)

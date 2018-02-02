@@ -10,7 +10,7 @@
   "test_sets": ["green_valid", "green_test"],
   "lr_sub_size": 10,
   "lr_sub_stride": 5,
-  "lr_block_size": [100, 100],
+  "lr_block_size": [30, 30],
   "epochs": 5,
   "optimizer": {
     "name": "adam",
