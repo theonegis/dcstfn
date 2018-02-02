@@ -108,7 +108,7 @@ class Experiment(object):
         callbacks += [CSVLogger(str(self.history_file), append=resume)]
 
         # Train
-        model.fit(x_train, y_train, batch_size=128, epochs=epochs, callbacks=callbacks,
+        model.fit(x_train, y_train, batch_size=256, epochs=epochs, callbacks=callbacks,
                   validation_data=(x_val, y_val), initial_epoch=initial_epoch)
 
         # Plot metrics history

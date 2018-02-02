@@ -41,7 +41,7 @@ load_train_set = partial(load_train_set,
                          lr_sub_stride=param['lr_sub_stride'])
 
 with tf.Session(config=tf.ConfigProto(
-                    intra_op_parallelism_threads=2)) as sess:
+                    intra_op_parallelism_threads=20)) as sess:
     K.set_session(sess)
     # Training
     expt = Experiment(scale=param['scale'], load_set=load_train_set,
