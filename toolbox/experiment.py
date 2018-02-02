@@ -13,7 +13,7 @@ from keras.preprocessing.image import img_to_array
 
 from osgeo import gdal_array
 
-from toolbox.data import data_dir, load_pairs
+from toolbox.data import data_dir, load_image_pairs, load_test_set
 from toolbox.metrics import psnr
 
 
@@ -127,16 +127,16 @@ class Experiment(object):
             plt.savefig('.'.join([prefix, metric.lower(), 'eps']))
             plt.close()
 
-    def test(self, test_set, metrics=[psnr]):
+    def test(self, test_set, lr_block_size=(20, 20), metrics=[psnr]):
         print('Test on', test_set)
-        image_dir = self.test_dir / test_set
-        image_dir.mkdir(exist_ok=True)
+        output_dir = self.test_dir / test_set
+        output_dir.mkdir(exist_ok=True)
 
         # Evaluate metrics on each image
         rows = []
         for image_path in (data_dir / test_set).glob('*'):
             if image_path.is_dir():
-                rows += [self.test_on_image(image_path, metrics=metrics)]
+                rows += [self.test_on_image(image_path, output_dir, lr_block_size=lr_block_size, metrics=metrics)]
         df = pd.DataFrame(rows)
         # Compute average metrics
         row = pd.Series()
@@ -147,20 +147,39 @@ class Experiment(object):
         df = df.append(row, ignore_index=True)
         df.to_csv(str(self.test_dir / '{}/metrics.csv'.format(test_set)))
 
-    def test_on_image(self, path, metrics=[psnr]):
+    def test_on_image(self, image_dir, output_dir, lr_block_size=(20, 20), metrics=[psnr]):
         # Load images
-        input_images, valid_image = load_pairs(path, scale=self.scale)
+        input_images, valid_image = load_image_pairs(image_dir, scale=self.scale)
+        assert len(input_images) == 3
         name = input_images[-1].filename.name if hasattr(input_images[-1], 'filename') else ''
         print('Predict on image {}'.format(name))
 
         # Generate output image and measure run time
+        # x_inputs的shape为四数组(数目，长度，宽度，通道数)
         x_inputs = [self.validate(img_to_array(im)) for im in input_images]
-        model = self.compile(self.build_model(*x_inputs))
+        assert x_inputs[0].shape[1] % lr_block_size[0] == 0
+        assert x_inputs[0].shape[2] % lr_block_size[1] == 0
+        x_train, _ = load_test_set((input_images, valid_image),
+                                   lr_block_size=lr_block_size, scale=self.scale)
+
+        model = self.compile(self.build_model(*x_train))
         if self.model_file.exists():
             model.load_weights(str(self.model_file))
 
         t_start = time.perf_counter()
-        y_pre = model.predict_on_batch(x_inputs)
+        y_preds = model.predict(x_train, batch_size=1)  # 结果的shape为四维
+        # 预测结束后进行恢复
+        y_pred = np.empty(x_inputs[1].shape[-3:])
+        row_step = lr_block_size[0] * self.scale
+        col_step = lr_block_size[1] * self.scale
+        rows = x_inputs[0].shape[2] // lr_block_size[1]
+        cols = x_inputs[0].shape[1] // lr_block_size[0]
+        count = 0
+        for i in range(cols):
+            for j in range(rows):
+                y_pred[i * row_step: (i + 1) * row_step, j * col_step: (j + 1) * col_step] = y_preds[count]
+                count += 1
+        assert count == rows * cols
         t_end = time.perf_counter()
 
         # Record metrics
@@ -168,12 +187,13 @@ class Experiment(object):
         row['name'] = name
         row['time'] = t_end - t_start
         y_true = self.validate(img_to_array(valid_image))
+        y_pred = self.validate(y_pred)
         for metric in metrics:
-            row[metric.__name__] = K.eval(metric(y_true, y_pre))
+            row[metric.__name__] = K.eval(metric(y_true, y_pred))
 
         prototype = str(valid_image.filename) if hasattr(valid_image, 'filename') else None
-        gdal_array.SaveArray(y_pre[0].squeeze().astype(np.int16),
-                             (self.test_dir / name),
+        gdal_array.SaveArray(y_pred[0].squeeze().astype(np.int16),
+                             str(output_dir / name),
                              prototype=prototype)
 
         return row

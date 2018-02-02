@@ -17,21 +17,21 @@ modis_prefix = 'MYD09A1'
 landsat_prefix = 'LC8'
 
 
-def mod_crop(image, scale):
-    """使得图像的大小是scale的整数倍，方便后续处理"""
-    size = np.array(image.size)
-    size -= size % scale
-    return image.crop([0, 0, *size])
-
-
-def gen_patches(image, size, stride):
+def gen_patches(image, size, stride=None):
     """将输入图像分割成给定大小的小块"""
-    for i in range(0, image.size[0] - size + 1, stride):
-        for j in range(0, image.size[1] - size + 1, stride):
-            yield image.crop([i, j, i + size, j + size])
+    if not isinstance(size, tuple):
+        size = (size, size)
+    if stride is None:
+        stride = size
+    elif not isinstance(stride, tuple):
+        stride = (stride, stride)
+    # 这里是列优先
+    for i in range(0, image.size[0] - size[0] + 1, stride[0]):
+        for j in range(0, image.size[1] - size[1] + 1, stride[1]):
+            yield image.crop([i, j, i + size[0], j + size[1]])
 
 
-def load_pairs(directory, scale=16):
+def load_image_pairs(directory, scale=16):
     """从指定目录中加载高低分辨率的图像对（包括两幅MODIS影像和两幅Landsat影像）"""
     path_list = []
     for path in Path(directory).glob('*'):
@@ -67,7 +67,17 @@ def load_pairs(directory, scale=16):
     return image_list[:3], image_list[-1]
 
 
-def load_set(image_dir, lr_sub_size=10, lr_sub_stride=5, scale=16):
+def sample_to_array(samples, lr_gen_sub, hr_gen_sub, patches):
+    # samples是当前批次的图片，patches是存储的容器
+    assert len(samples) == 4
+    for i in range(4):
+        if i % 2 == 0:
+            patches[i] += [img_to_array(img) for img in lr_gen_sub(samples[i])]
+        else:
+            patches[i] += [img_to_array(img) for img in hr_gen_sub(samples[i])]
+
+
+def load_train_set(image_dir, lr_sub_size=10, lr_sub_stride=5, scale=16):
     """从给定的数据目录中加载高低分辨率的数据（根据高分辨率图像采样得到低分辨的图像）"""
     hr_sub_size = lr_sub_size * scale
     hr_sub_stride = lr_sub_stride * scale
@@ -75,18 +85,29 @@ def load_set(image_dir, lr_sub_size=10, lr_sub_stride=5, scale=16):
     lr_gen_sub = partial(gen_patches, size=lr_sub_size, stride=lr_sub_stride)
     hr_gen_sub = partial(gen_patches, size=hr_sub_size, stride=hr_sub_stride)
 
-    sample_patches = [[], [], [], []]
+    patches = [[] for _ in range(4)]
     for path in (data_dir / image_dir).glob('*'):
         if path.is_dir():
-            samples = load_pairs(path, scale=scale)
-            samples = [samples[0][0], samples[0][1], samples[0][2], samples[1]]
-            for i in range(4):
-                if i % 2 == 0:
-                    sample_patches[i] += [img_to_array(img) for img in lr_gen_sub(samples[i])]
-                else:
-                    sample_patches[i] += [img_to_array(img) for img in hr_gen_sub(samples[i])]
+            samples = load_image_pairs(path, scale=scale)
+            samples = [*samples[0], samples[1]]
+            sample_to_array(samples, lr_gen_sub, hr_gen_sub, patches)
 
     for i in range(4):
-        sample_patches[i] = np.stack(sample_patches[i])
+        patches[i] = np.stack(patches[i])
     # 返回结果为一个四维的数组(数目，长度，宽度，通道数)
-    return sample_patches[:3], sample_patches[-1]
+    return patches[:3], patches[-1]
+
+
+def load_test_set(samples, lr_block_size=(20, 20), scale=16):
+    assert len(samples) == 2
+    hr_block_size = [m * scale for m in lr_block_size]
+    lr_gen_sub = partial(gen_patches, size=tuple(lr_block_size))
+    hr_gen_sub = partial(gen_patches, size=tuple(hr_block_size))
+
+    patches = [[] for _ in range(4)]
+    samples = [*samples[0], samples[1]]
+    sample_to_array(samples, lr_gen_sub, hr_gen_sub, patches)
+
+    for i in range(4):
+        patches[i] = np.stack(patches[i])
+    return patches[:3], patches[-1]
