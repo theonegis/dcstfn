@@ -14,7 +14,7 @@ from keras.preprocessing.image import img_to_array
 from osgeo import gdal_array
 
 from toolbox.data import data_dir, load_image_pairs, load_test_set
-from toolbox.metrics import psnr
+from toolbox.metrics import psnr, r2
 
 
 class Experiment(object):
@@ -72,7 +72,7 @@ class Experiment(object):
 
     def compile(self, model):
         """Compile model with default settings."""
-        model.compile(optimizer=self.optimizer, loss='mse', metrics=[psnr])
+        model.compile(optimizer=self.optimizer, loss='mse', metrics=[psnr, r2])
         return model
 
     def train(self, train_set, val_set, epochs=10, resume=True):
@@ -88,7 +88,7 @@ class Experiment(object):
         model = self.compile(self.build_model(*x_train))
         model.summary()
         self.config_file.write_text(model.to_yaml())
-        plot_model(model, to_file=str(self.visual_file), show_shapes=True, rankdir='LR')
+        plot_model(model, to_file=str(self.visual_file), show_shapes=True)
 
         # Inherit weights
         if resume:
@@ -108,14 +108,14 @@ class Experiment(object):
         callbacks += [CSVLogger(str(self.history_file), append=resume)]
 
         # Train
-        model.fit(x_train, y_train, batch_size=256, epochs=epochs, callbacks=callbacks,
+        model.fit(x_train, y_train, batch_size=320, epochs=epochs, callbacks=callbacks,
                   validation_data=(x_val, y_val), initial_epoch=initial_epoch)
 
         # Plot metrics history
         prefix = str(self.history_file).rsplit('.', maxsplit=1)[0]
         df = pd.read_csv(str(self.history_file))
         epoch = df['epoch']
-        for metric in ['Loss', 'PSNR']:
+        for metric in ['Loss', 'PSNR', 'R2']:
             train = df[metric.lower()]
             val = df['val_' + metric.lower()]
             plt.figure()
@@ -127,7 +127,7 @@ class Experiment(object):
             plt.savefig('.'.join([prefix, metric.lower(), 'eps']))
             plt.close()
 
-    def test(self, test_set, lr_block_size=(20, 20), metrics=[psnr]):
+    def test(self, test_set, lr_block_size=(20, 20), metrics=[psnr, r2]):
         print('Test on', test_set)
         output_dir = self.test_dir / test_set
         output_dir.mkdir(exist_ok=True)
@@ -147,7 +147,7 @@ class Experiment(object):
         df = df.append(row, ignore_index=True)
         df.to_csv(str(self.test_dir / '{}/metrics.csv'.format(test_set)))
 
-    def test_on_image(self, image_dir, output_dir, lr_block_size=(20, 20), metrics=[psnr]):
+    def test_on_image(self, image_dir, output_dir, lr_block_size=(20, 20), metrics=[psnr, r2]):
         # Load images
         print('loading image pairs from {}'.format(image_dir))
         input_images, valid_image = load_image_pairs(image_dir, scale=self.scale)
@@ -170,7 +170,7 @@ class Experiment(object):
         t_start = time.perf_counter()
         y_preds = model.predict(x_train, batch_size=1)  # 结果的shape为四维
         # 预测结束后进行恢复
-        y_pred = np.empty(x_inputs[1].shape[-3:])
+        y_pred = np.empty(x_inputs[1].shape[-3:], dtype=np.float32)
         row_step = lr_block_size[0] * self.scale
         col_step = lr_block_size[1] * self.scale
         rows = x_inputs[0].shape[2] // lr_block_size[1]

@@ -13,8 +13,8 @@ input_suffix = 'input'
 pred_suffix = 'pred'
 valid_suffix = 'valid'
 
-modis_prefix = 'MYD09A1'
-landsat_prefix = 'LC8'
+modis_prefix = 'MOD09A1'
+landsat_prefix = 'LC08'
 
 
 def gen_patches(image, size, stride=None):
