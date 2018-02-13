@@ -1,5 +1,5 @@
 import keras.layers
-from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D
+from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, Dense
 from keras.models import Model, Sequential
 
 from toolbox.misc import factorize
@@ -53,9 +53,7 @@ def dcfn(coarse_input, fine_input, coarse_pred, d=[64, 96, 128]):
     coarse_pred_layer = Input(shape=coarse_pred.shape[-3:])
     coarse_pred_model = coarse_model(coarse_pred_layer)
     added_layer = keras.layers.add([subtracted_layer, coarse_pred_model])
-    final_out = Conv2D(fine_input.shape[-1], 3, padding='same',
-                       kernel_initializer='he_normal',
-                       activation='relu')(added_layer)
+    final_out = Dense(fine_input.shape[-1])(added_layer)
     model = Model([coarse_input_layer, fine_input_layer, coarse_pred_layer], final_out)
     return model
 
