@@ -18,19 +18,35 @@ def evaluate(y_true, y_pred, func):
     return metrics
 
 
-def mse(y_true, y_pred):
+def mae(y_true, y_pred):
     return evaluate(y_true, y_pred,
-                    lambda x, y: mean_absolute_error(x.flatten(), y.flatten()))
+                    lambda x, y: mean_absolute_error(x.ravel(), y.ravel()))
 
 
 def rmse(y_true, y_pred):
     return evaluate(y_true, y_pred,
-                    lambda x, y: sqrt(mean_squared_error(x.flatten(), y.flatten())))
+                    lambda x, y: sqrt(mean_squared_error(x.ravel(), y.ravel())))
 
 
 def r2(y_true, y_pred):
     return evaluate(y_true, y_pred,
-                    lambda x, y: r2_score(x.flatten(), y.flatten()))
+                    lambda x, y: r2_score(x.ravel(), y.ravel()))
+
+
+def kge(y_true, y_pred):
+    def compute(x, y):
+        im_true = x.ravel()
+        im_pred = y.ravel()
+        r = np.corrcoef(im_true, im_pred)[1, 0]
+        m_true = np.mean(im_true)
+        m_pred = np.mean(im_pred)
+        std_true = np.std(im_true)
+        std_pred = np.std(im_pred)
+        return 1 - np.sqrt((r - 1) ** 2
+                           + (std_pred / std_true - 1) ** 2
+                           + (m_pred / m_true - 1) ** 2)
+
+    return evaluate(y_true, y_pred, compute)
 
 
 def psnr(y_true, y_pred, data_range=10000):
@@ -52,13 +68,9 @@ if __name__ == '__main__':
 
     assert len(inputs) == 2
 
-    scales = 10000
     ix = gdal_array.LoadFile(str(inputs[0].expanduser().resolve()))
     iy = gdal_array.LoadFile(str(inputs[1].expanduser().resolve()))
-    dn = ix, iy
-    sr = ix / scales, iy / scales
-    print('MSE: ', *mse(*sr))
-    print('RMSE: ', *rmse(*sr))
-    print('R2: ', *r2(*sr))
-    print('PSNR: ', *psnr(*dn))
-    print('SSIM: ', *ssim(*dn))
+    print('RMSE: ', *rmse(ix, iy))
+    print('R2: ', *r2(ix, iy))
+    print('KGE: ', *kge(ix, iy))
+    print('SSIM: ', *ssim(ix, iy))
