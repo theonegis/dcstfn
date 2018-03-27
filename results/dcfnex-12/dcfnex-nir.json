@@ -1,0 +1,22 @@
+{
+  "save_dir": "dcstfn-nir",
+  "model": {
+    "name": "dcstfnex",
+    "params": {"d": [32, 64, 128]}
+  },
+  "scale": 16,
+  "train_set": "nir_train",
+  "val_set": "nir_valid",
+  "test_sets": [ "nir_valid"],
+  "lr_sub_size": 10,
+  "lr_sub_stride": 5,
+  "lr_block_size": [50, 50],
+  "epochs": 60,
+  "optimizer": {
+    "name": "adam",
+    "params": {
+      "lr": 1e-3,
+      "decay": 1e-5
+    }
+  }
+}

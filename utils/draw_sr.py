@@ -49,7 +49,7 @@ fig = plt.figure()
 ax = plt.gca()
 ax.scatter(x, y, c=z, s=1, cmap=plt.cm.rainbow)
 
-max_sr = 6000
+max_sr = 3000 if band_ix in (0, 1) else 6000
 ax.set_xlim((0, max_sr))
 ax.set_ylim((0, max_sr))
 ax.plot([0, max_sr], [0, max_sr], linewidth=1, color='gray')
