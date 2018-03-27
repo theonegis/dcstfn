@@ -2,7 +2,9 @@ import keras.layers
 from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, Dense
 from keras.models import Model, Sequential
 
-from toolbox.misc import factorize
+##################################################################
+# Deep Convolutional SpatioTemporal Fusion Network (DCSTFN)
+##################################################################
 
 
 def dcstfn(coarse_input, fine_input, coarse_pred, d=[32, 64, 128]):
