@@ -11,9 +11,6 @@ import json
 from keras import optimizers
 from pathlib import Path
 
-import tensorflow as tf
-from keras.backend import tensorflow_backend as K
-
 from toolbox.data import load_train_set
 from toolbox.model import get_model
 from toolbox.experiment import Experiment
@@ -40,18 +37,15 @@ load_train_set = partial(load_train_set,
                          lr_sub_size=param['lr_sub_size'],
                          lr_sub_stride=param['lr_sub_stride'])
 
-with tf.Session(config=tf.ConfigProto(
-                    intra_op_parallelism_threads=20)) as sess:
-    K.set_session(sess)
-    # Training
-    expt = Experiment(scale=param['scale'], load_set=load_train_set,
-                      build_model=build_model, optimizer=optimizer,
-                      save_dir=param['save_dir'])
-    print('training process...')
-    expt.train(train_set=param['train_set'], val_set=param['val_set'],
-               epochs=param['epochs'], resume=True)
+# Training
+expt = Experiment(scale=param['scale'], load_set=load_train_set,
+                  build_model=build_model, optimizer=optimizer,
+                  save_dir=param['save_dir'])
+print('training process...')
+expt.train(train_set=param['train_set'], val_set=param['val_set'],
+           epochs=param['epochs'], resume=True)
 
-    # Evaluation
-    print('evaluation process...')
-    for test_set in param['test_sets']:
-        expt.test(test_set=test_set, lr_block_size=lr_block_size)
+# Evaluation
+print('evaluation process...')
+for test_set in param['test_sets']:
+    expt.test(test_set=test_set, lr_block_size=lr_block_size)
