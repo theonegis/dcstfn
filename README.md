@@ -1,16 +1,26 @@
 # Deriving High Spatiotemporal Remote Sensing Images Using Deep Convolutional Network
 
-# Requirements:
+# Requirements
 
-tested on the following environment:
+Tested on the following environment:
 
-python: 3.5
+Python: >=3.5
 
-tensorflow: 1.4.1
+TensorFlow: 1.4.1
 
-keras: 2.1.2
+Keras: 2.1.2
 
-# Reference:
+# PyTorch
+
+The pytorch branch provides the pytorch implementation
+
+Tested on the following environment:
+
+- Python: >=3.6
+
+- PyTorch: >=0.4
+
+# Reference
 
 http://www.mdpi.com/2072-4292/10/7/1066
 
