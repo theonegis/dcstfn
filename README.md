@@ -20,6 +20,8 @@ Tested on the following environment:
 
 - PyTorch: >=0.4
 
+**The PyTorch Version is recommended for produciton**
+
 # Reference
 
 http://www.mdpi.com/2072-4292/10/7/1066
