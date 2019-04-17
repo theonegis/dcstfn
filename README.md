@@ -10,6 +10,8 @@ TensorFlow: 1.4.1
 
 Keras: 2.1.2
 
+** The TensorFlow Version is not optimized for memory consumption and PyTorch Version is recommended.
+
 # PyTorch
 
 The pytorch branch provides the pytorch implementation
