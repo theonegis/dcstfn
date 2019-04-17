@@ -14,7 +14,7 @@ Keras: 2.1.2
 
 **Please checkout to the pytorch branch to use the PyTorch Version**
 
-**If you find any bugs, pulling request is welcom!**
+**If you find any bugs, pulling request is welcome!**
 
 # PyTorch
 
