@@ -5,6 +5,7 @@
 Please consider using the enhanced DCSTFN (EDCSTFN) model, which shows better performance concerning the output image quality and fusion accuracy.
 
 Code repository: https://github.com/theonegis/edcstfn
+
 Paper online: https://www.mdpi.com/2072-4292/11/24/2898/htm
 
 # Requirements
